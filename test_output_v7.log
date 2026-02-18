@@ -1,0 +1,6 @@
+Testing Shipping Rates Function (Raw Fetch)...
+Status: 400
+Body: {
+  "error": "Envia API Error (No Data): {\"meta\":\"error\",\"error\":{\"code\":1101,\"description\":\"Invalid Option\",\"message\":\"Carrier provided is not supported or incorrect.\"}}",
+  "context": {}
+}

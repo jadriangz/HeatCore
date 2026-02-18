@@ -1,0 +1,18 @@
+Testing Shipping Rates Function (Raw Fetch)...
+Status: 200
+Body: [
+  {
+    "carrier": "fedex",
+    "service": "ground",
+    "price": 165,
+    "currency": "MXN",
+    "deliveryDate": "2-4 días"
+  },
+  {
+    "carrier": "fedex",
+    "service": "express",
+    "price": 175,
+    "currency": "MXN",
+    "deliveryDate": "Día siguiente"
+  }
+]

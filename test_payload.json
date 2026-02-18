@@ -1,0 +1,13 @@
+{
+    "destination": {
+        "postalCode": "80000",
+        "country": "MX"
+    },
+    "items": [
+        {
+            "name": "Booster Box",
+            "quantity": 1,
+            "weight": 1
+        }
+    ]
+}

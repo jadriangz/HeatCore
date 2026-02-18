@@ -4,7 +4,7 @@ import { Package, ShoppingCart, BarChart3, Settings, Menu, LogOut, Flame, Clipbo
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-import { supabase } from '@/lib/supabase'
+
 
 export default function DashboardLayout() {
     const location = useLocation()

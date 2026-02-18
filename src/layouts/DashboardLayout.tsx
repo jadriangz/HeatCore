@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Package, ShoppingCart, BarChart3, Settings, Menu, LogOut, Flame } from 'lucide-react'
+import { Package, ShoppingCart, BarChart3, Settings, Menu, LogOut, Flame, ClipboardList } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -12,6 +12,7 @@ export default function DashboardLayout() {
 
     const navItems = [
         { href: '/', label: 'Punto de Venta', icon: ShoppingCart },
+        { href: '/sales', label: 'Ventas', icon: ClipboardList },
         { href: '/packing', label: 'Empaquetado', icon: Package },
         { href: '/inventory', label: 'Inventarios', icon: BarChart3 },
         { href: '/settings', label: 'Configuración', icon: Settings },

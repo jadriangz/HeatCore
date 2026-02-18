@@ -9,8 +9,11 @@ try {
     if (!supabaseUrl || !supabaseAnonKey) {
         throw new Error('Missing Environment Variables')
     }
-    // Trim whitespace just in case user pasted with spaces
-    client = createClient(supabaseUrl.trim(), supabaseAnonKey.trim())
+    // Trim whitespace and remove quotes just in case
+    client = createClient(
+        supabaseUrl.trim().replace(/^["']|["']$/g, ''),
+        supabaseAnonKey.trim().replace(/^["']|["']$/g, '')
+    )
 } catch (error) {
     console.error('Supabase Initialization Error:', error)
     // Fallback to safe placeholder so app can launch and show ErrorBoundary

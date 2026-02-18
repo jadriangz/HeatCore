@@ -25,12 +25,19 @@ export default function DashboardLayout() {
 
     useEffect(() => {
         const checkConnection = async () => {
+            // Use the exported initUrl if available, otherwise check client
             // @ts-ignore
-            const url = supabase.supabaseUrl || 'Unknown'
+            const url = supabaseInitUrl || supabase.supabaseUrl || 'Unknown'
+
+            if (supabaseInitError) {
+                setDebugInfo({ url, status: `Init Fail: ${supabaseInitError}` })
+                return
+            }
+
             try {
                 const { count, error } = await supabase.from('product_variants').select('*', { count: 'exact', head: true })
                 if (error) {
-                    setDebugInfo({ url, status: `Error: ${error.message}` })
+                    setDebugInfo({ url, status: `DB Error: ${error.message}` })
                 } else {
                     setDebugInfo({ url, status: `Connected! (Count: ${count})` })
                 }

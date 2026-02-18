@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Search, Filter, ExternalLink, ShoppingBag, Globe } from 'lucide-react'
+import { Search, ShoppingBag, Globe } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 

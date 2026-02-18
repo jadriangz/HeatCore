@@ -12,8 +12,13 @@ try {
         throw new Error('Missing Environment Variables')
     }
     // Trim whitespace and remove quotes just in case
-    const cleanUrl = supabaseUrl.trim().replace(/^["']|["']$/g, '')
+    let cleanUrl = supabaseUrl.trim().replace(/^["']|["']$/g, '')
     const cleanKey = supabaseAnonKey.trim().replace(/^["']|["']$/g, '')
+
+    // Auto-fix: If user provided just the Project ID, construct the full URL
+    if (!cleanUrl.startsWith('http')) {
+        cleanUrl = `https://${cleanUrl}.supabase.co`
+    }
 
     initUrl = cleanUrl
     client = createClient(cleanUrl, cleanKey)

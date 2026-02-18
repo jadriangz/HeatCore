@@ -30,5 +30,3 @@ try {
 }
 
 export const supabase = client
-export const supabaseInitError = initError
-export const supabaseInitUrl = initUrl

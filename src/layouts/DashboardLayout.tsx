@@ -15,8 +15,32 @@ export default function DashboardLayout() {
         { href: '/settings', label: 'Configuración', icon: Settings },
     ]
 
+    const [debugInfo, setDebugInfo] = useState<{ url: string, status: string }>({ url: 'Checking...', status: 'Testing...' })
+
+    // TEMPORARY DEBUG: Check Supabase Connection
+    import { supabase } from '@/lib/supabase'
+    import { useEffect } from 'react'
+
+    useEffect(() => {
+        const checkConnection = async () => {
+            // @ts-ignore
+            const url = supabase.supabaseUrl || 'Unknown'
+            try {
+                const { count, error } = await supabase.from('product_variants').select('*', { count: 'exact', head: true })
+                if (error) {
+                    setDebugInfo({ url, status: `Error: ${error.message}` })
+                } else {
+                    setDebugInfo({ url, status: `Connected! (Count: ${count})` })
+                }
+            } catch (e: any) {
+                setDebugInfo({ url, status: `Crash: ${e.message}` })
+            }
+        }
+        checkConnection()
+    }, [])
+
     return (
-        <div className="flex h-screen bg-background overflow-hidden font-sans">
+        <div className="flex h-screen bg-background overflow-hidden font-sans relative">
             {/* Sidebar */}
             <aside
                 className={cn(
@@ -80,6 +104,12 @@ export default function DashboardLayout() {
                     <Outlet />
                 </div>
             </main>
+
+            {/* DEBUG FOOTER */}
+            <div className="fixed bottom-0 right-0 bg-black text-white text-xs p-2 m-2 rounded opacity-80 pointer-events-none z-50 font-mono">
+                <div>URL: {debugInfo.url}</div>
+                <div>Status: {debugInfo.status}</div>
+            </div>
         </div>
     )
 }

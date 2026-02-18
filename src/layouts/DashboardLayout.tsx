@@ -4,6 +4,9 @@ import { Package, ShoppingCart, BarChart3, Settings, Menu, LogOut, Flame } from 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
+import { supabase } from '@/lib/supabase'
+import { useEffect } from 'react'
+
 export default function DashboardLayout() {
     const location = useLocation()
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -18,8 +21,7 @@ export default function DashboardLayout() {
     const [debugInfo, setDebugInfo] = useState<{ url: string, status: string }>({ url: 'Checking...', status: 'Testing...' })
 
     // TEMPORARY DEBUG: Check Supabase Connection
-    import { supabase } from '@/lib/supabase'
-    import { useEffect } from 'react'
+
 
     useEffect(() => {
         const checkConnection = async () => {

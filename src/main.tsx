@@ -6,7 +6,7 @@ import './index.css'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 // Global Error Handler for debugging production white screens
-window.onerror = function (message, source, lineno, colno, error) {
+window.onerror = function (message, source, lineno) {
     const errorDiv = document.createElement('div');
     errorDiv.style.position = 'fixed';
     errorDiv.style.top = '0';

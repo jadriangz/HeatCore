@@ -29,9 +29,10 @@ export function ProductGrid({ onAddToCart }: ProductGridProps) {
             .from('product_variants')
             .select(`
                 *,
-                products (*),
+                products!inner (*),
                 inventory (quantity)
             `)
+            .eq('products.type', 'resale')
 
         if (error) {
             console.error('Error fetching products:', error)

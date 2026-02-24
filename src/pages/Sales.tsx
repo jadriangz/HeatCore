@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Input } from '@/components/ui/input'
-import { Search, ShoppingBag, Globe } from 'lucide-react'
+import { Search, ShoppingBag, Globe, Eye } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { Button } from '@/components/ui/button'
+import ViewOrderDialog from './sales/ViewOrderDialog'
 
 // Simple Badge Component (since we might not have one yet)
 const Badge = ({ children, className }: { children: React.ReactNode, className?: string }) => (
@@ -16,7 +18,7 @@ export default function Sales() {
     const [orders, setOrders] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
-    const [statusFilter, setStatusFilter] = useState('all')
+    const [selectedOrder, setSelectedOrder] = useState<any>(null)
 
     useEffect(() => {
         fetchOrders()
@@ -27,7 +29,7 @@ export default function Sales() {
         try {
             const { data, error } = await supabase
                 .from('orders')
-                .select('*')
+                .select('*, customers(name, email)')
                 .order('created_at', { ascending: false })
 
             if (error) throw error
@@ -58,10 +60,10 @@ export default function Sales() {
     }
 
     const filteredOrders = orders.filter(order => {
-        const matchesSearch = (order.customer_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        const cName = order.customers?.name || order.customer_name || '';
+        const matchesSearch = cName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (order.order_number?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-        const matchesStatus = statusFilter === 'all' || order.status === statusFilter
-        return matchesSearch && matchesStatus
+        return matchesSearch
     })
 
     return (
@@ -78,19 +80,14 @@ export default function Sales() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <select
-                        className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                        <option value="all">Todos</option>
-                        <option value="paid">Pagado</option>
-                        <option value="pending">Pendiente</option>
-                        <option value="shipped">Enviado</option>
-                        <option value="cancelled">Cancelado</option>
-                    </select>
                 </div>
             </div>
+
+            <ViewOrderDialog
+                open={!!selectedOrder}
+                onOpenChange={(open) => !open && setSelectedOrder(null)}
+                order={selectedOrder}
+            />
 
             <div className="border rounded-lg overflow-hidden bg-card">
                 <div className="overflow-x-auto">
@@ -103,7 +100,7 @@ export default function Sales() {
                                 <th className="px-4 py-3">Origen</th>
                                 <th className="px-4 py-3">Estatus</th>
                                 <th className="px-4 py-3 text-right">Total</th>
-                                {/* <th className="px-4 py-3 text-center">Acciones</th> */}
+                                <th className="px-4 py-3 text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
@@ -129,8 +126,8 @@ export default function Sales() {
                                             {format(new Date(order.created_at), 'dd MMM yyyy, HH:mm', { locale: es })}
                                         </td>
                                         <td className="px-4 py-3">
-                                            <div className="font-medium">{order.customer_name || 'Cliente General'}</div>
-                                            <div className="text-xs text-muted-foreground">{order.customer_email}</div>
+                                            <div className="font-medium">{order.customers?.name || order.customer_name || 'Cliente General'}</div>
+                                            <div className="text-xs text-muted-foreground">{order.customers?.email || order.customer_email}</div>
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-2" title={order.origin}>
@@ -149,13 +146,11 @@ export default function Sales() {
                                         <td className="px-4 py-3 text-right font-medium">
                                             ${order.total_amount?.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                         </td>
-                                        {/* 
                                         <td className="px-4 py-3 text-center">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                <ExternalLink className="h-4 w-4" />
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-black hover:bg-gray-200" onClick={() => setSelectedOrder(order)}>
+                                                <Eye className="h-4 w-4" />
                                             </Button>
                                         </td>
-                                        */}
                                     </tr>
                                 ))
                             )}

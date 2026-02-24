@@ -12,6 +12,11 @@ export default function AuditScreen() {
     const [transactions, setTransactions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
+    // Batch Audit State
+    const [draftCounts, setDraftCounts] = useState<Record<string, number>>({})
+    const [auditNotes, setAuditNotes] = useState('Ajuste General - Conteo Físico')
+    const [isSavingAll, setIsSavingAll] = useState(false)
+
     // Helper to fetch inventory
     async function fetchInventory() {
         setLoading(true)
@@ -28,13 +33,8 @@ export default function AuditScreen() {
             setVariants(data.map(v => ({
                 ...v,
                 current_stock: v.inventory?.[0]?.quantity || 0,
-                // We'll track the "physical count" input separately in state if needed, 
-                // but for simplicity, we can let the user type into a controlled input per row 
-                // or just use an Uncontrolled input for the "New Count" to avoid massive re-renders. 
-                // Let's use a local map for draft counts? 
-                // For now, simpler: Input is uncontrolled or managed at row level Component? 
-                // Let's Keep it simple: valid local state for inputs.
             })))
+            setDraftCounts({}) // Reset drafts on reload
         }
         setLoading(false)
     }
@@ -69,34 +69,40 @@ export default function AuditScreen() {
         v.products?.title.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
-    // Row component to manage local input state
-    function AuditRow({ variant, onUpdate }: { variant: any, onUpdate: () => void }) {
-        const [count, setCount] = useState('')
-        const [isSubmitting, setIsSubmitting] = useState(false)
+    // Calculate pending changes
+    const pendingChanges = variants.filter(v =>
+        draftCounts[v.id] !== undefined && draftCounts[v.id] !== v.current_stock
+    )
 
-        async function handleSave() {
-            const qty = parseInt(count)
-            if (isNaN(qty)) return // Ignore invalid
+    async function handleSaveAll() {
+        if (pendingChanges.length === 0) return
+        if (!confirm(`¿Estás seguro de registrar ${pendingChanges.length} ajustes en el inventario?`)) return
 
-            setIsSubmitting(true)
-            try {
+        setIsSavingAll(true)
+        try {
+            // Process sequentially to not overload connections
+            for (const v of pendingChanges) {
                 const { error } = await supabase.rpc('audit_inventory', {
-                    p_variant_id: variant.id,
-                    p_new_quantity: qty,
-                    p_reason: 'audit_adjustment'
+                    p_variant_id: v.id,
+                    p_new_quantity: draftCounts[v.id],
+                    p_reason: auditNotes
                 })
-
                 if (error) throw error
-
-                alert('Inventario actualizado')
-                setCount('') // Clear input
-                onUpdate() // Refresh parent data
-            } catch (e: any) {
-                alert('Error: ' + e.message)
-            } finally {
-                setIsSubmitting(false)
             }
+
+            alert('✅ Todos los ajustes de auditoría se han registrado correctamente.')
+            setAuditNotes('Ajuste General - Conteo Físico')
+            fetchInventory() // Refreshes and clears drafts
+        } catch (e: any) {
+            alert('Error al guardar ajustes: ' + e.message)
+        } finally {
+            setIsSavingAll(false)
         }
+    }
+
+    // Row component to simply render and report value
+    function AuditRow({ variant }: { variant: any }) {
+        const currentDraft = draftCounts[variant.id] !== undefined ? draftCounts[variant.id] : ''
 
         return (
             <tr className="border-b hover:bg-muted/50 transition-colors">
@@ -114,23 +120,26 @@ export default function AuditScreen() {
                     <Input
                         type="number"
                         placeholder={variant.current_stock.toString()}
-                        className="h-9 text-center font-bold"
-                        value={count}
-                        onChange={e => setCount(e.target.value)}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter') handleSave()
+                        className={`h-9 text-center font-bold ${currentDraft !== '' && currentDraft !== variant.current_stock ? 'bg-orange-50 border-orange-300' : ''}`}
+                        value={currentDraft}
+                        onChange={e => {
+                            const val = e.target.value
+                            if (val === '') {
+                                const newDrafts = { ...draftCounts }
+                                delete newDrafts[variant.id]
+                                setDraftCounts(newDrafts)
+                            } else {
+                                setDraftCounts({ ...draftCounts, [variant.id]: parseInt(val) })
+                            }
                         }}
                     />
                 </td>
                 <td className="p-3 text-right">
-                    <Button
-                        size="sm"
-                        disabled={count === '' || isSubmitting}
-                        onClick={handleSave}
-                        variant={count !== '' && parseInt(count) !== variant.current_stock ? "default" : "secondary"}
-                    >
-                        {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ajustar"}
-                    </Button>
+                    {currentDraft !== '' && currentDraft !== variant.current_stock && (
+                        <span className="text-xs font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded">
+                            {currentDraft > variant.current_stock ? '+' : ''}{currentDraft - variant.current_stock} DIFF
+                        </span>
+                    )}
                 </td>
             </tr>
         )
@@ -162,15 +171,34 @@ export default function AuditScreen() {
             {activeTab === 'audit' && (
                 <Card>
                     <CardHeader className="pb-3">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Escanear SKU o Buscar Nombre..." // Spanish
-                                className="pl-9"
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                                autoFocus
-                            />
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="relative w-full md:w-64">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Escanear SKU o Buscar Nombre..."
+                                    className="pl-9"
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-2 w-full md:w-auto p-2 bg-orange-50 rounded-md border border-orange-200">
+                                <Input
+                                    placeholder="Nota de Auditoría"
+                                    className="h-8 max-w-[200px] border-orange-300"
+                                    value={auditNotes}
+                                    onChange={e => setAuditNotes(e.target.value)}
+                                />
+                                <Button
+                                    onClick={handleSaveAll}
+                                    disabled={isSavingAll || pendingChanges.length === 0}
+                                    className="bg-orange-600 hover:bg-orange-700 text-white h-8 text-xs font-bold"
+                                >
+                                    {isSavingAll ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                    Procesar ({pendingChanges.length}) Cambios
+                                </Button>
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -191,7 +219,7 @@ export default function AuditScreen() {
                                         <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No se encontraron productos.</td></tr>
                                     ) : (
                                         filteredVariants.map(v => (
-                                            <AuditRow key={v.id} variant={v} onUpdate={fetchInventory} />
+                                            <AuditRow key={v.id} variant={v} />
                                         ))
                                     )}
                                 </tbody>

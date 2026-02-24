@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Link } from "react-router-dom"
-import { Plus, ClipboardCheck, Package, AlertTriangle, Pencil, Trash2, ArrowDownCircle, Search, CheckCircle } from "lucide-react"
+import { Plus, ClipboardCheck, AlertTriangle, Pencil, Trash2, ArrowDownCircle, Search, CheckCircle } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { ProductForm } from "@/components/ProductForm"
 import {
@@ -29,7 +29,8 @@ export default function InventoryPage() {
     const [stats, setStats] = useState({
         totalVariants: 0,
         lowStock: 0,
-        suppliesCount: 0
+        suppliesCount: 0,
+        estimatedValue: 0
     })
     const [variants, setVariants] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -49,20 +50,27 @@ export default function InventoryPage() {
     const [searchTerm, setSearchTerm] = useState('')
     const [filterCategory, setFilterCategory] = useState<string>('all')
     const [filterType, setFilterType] = useState<string>('all')
+    const [filterSet, setFilterSet] = useState<string>('all')
     const [showLowStockOnly, setShowLowStockOnly] = useState(false)
     const [groupBy, setGroupBy] = useState<string>('none')
 
+    const [catalogs, setCatalogs] = useState<{ product_type: any[], product_category: any[], tcg_set: any[] }>({
+        product_type: [],
+        product_category: [],
+        tcg_set: []
+    })
+
     // Derived Data
-    const categories = Array.from(new Set(variants.map(v => v.category).filter(Boolean))).sort()
 
     const filteredVariants = variants.filter(v => {
         const matchesSearch = (v.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
             (v.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase())
         const matchesCategory = filterCategory === 'all' || v.category === filterCategory
         const matchesType = filterType === 'all' || v.type === filterType
+        const matchesSet = filterSet === 'all' || v.raw_set_name === filterSet
         const matchesLowStock = !showLowStockOnly || v.stock < v.min_stock_level
 
-        return matchesSearch && matchesCategory && matchesType && matchesLowStock
+        return matchesSearch && matchesCategory && matchesType && matchesSet && matchesLowStock
     })
 
     const groupedVariants = groupBy === 'none' ? null : filteredVariants.reduce((groups: any, variant) => {
@@ -72,9 +80,25 @@ export default function InventoryPage() {
         return groups
     }, {})
 
-    async function fetchData() {
+    async function initData() {
         setLoading(true)
-        // Fetch VARIANTS, not just products, because inventory is at variant level
+
+        // 1. Fetch catalogs
+        const { data: catData } = await supabase.from('system_catalogs').select('*').eq('is_active', true)
+        const cats = {
+            product_type: catData ? catData.filter(d => d.catalog_group === 'product_type') : [],
+            product_category: catData ? catData.filter(d => d.catalog_group === 'product_category') : [],
+            tcg_set: catData ? catData.filter(d => d.catalog_group === 'tcg_set') : [],
+        }
+        setCatalogs(cats)
+
+        // Helper to translate internal codes
+        const getName = (code: string, group: 'product_type' | 'product_category' | 'tcg_set') => {
+            const match = cats[group].find(c => c.internal_code === code)
+            return match ? match.name : code
+        }
+
+        // 2. Fetch inventory
         const { data: allVariants } = await supabase
             .from('product_variants')
             .select(`
@@ -87,6 +111,7 @@ export default function InventoryPage() {
         if (allVariants) {
             let low = 0
             let supply = 0
+            let estValue = 0
 
             const formatted = allVariants.map(v => {
                 const stock = v.inventory?.[0]?.quantity || 0
@@ -94,12 +119,19 @@ export default function InventoryPage() {
 
                 if (stock < minStock) low++
                 if (v.products?.type === 'supply') supply++
+                if (v.products?.type === 'resale') {
+                    estValue += (v.cost_price || 0) * stock
+                }
 
                 return {
                     ...v,
                     title: v.products?.title || 'Producto Desconocido',
                     type: v.products?.type || 'resale',
                     category: v.products?.category || '-',
+                    type_name: getName(v.products?.type, 'product_type') || 'Producto',
+                    category_name: getName(v.products?.category, 'product_category') || '-',
+                    set_name: getName(v.products?.set_name, 'tcg_set') || '-',
+                    raw_set_name: v.products?.set_name,
                     min_stock_level: minStock,
                     stock
                 }
@@ -108,7 +140,8 @@ export default function InventoryPage() {
             setStats({
                 totalVariants: allVariants.length,
                 lowStock: low,
-                suppliesCount: supply
+                suppliesCount: supply,
+                estimatedValue: estValue
             })
             setVariants(formatted)
         }
@@ -116,7 +149,7 @@ export default function InventoryPage() {
     }
 
     useEffect(() => {
-        fetchData()
+        initData()
     }, [])
 
     function handleEdit(variant: any) {
@@ -144,7 +177,7 @@ export default function InventoryPage() {
             if (error) throw error
 
             alert('✅ Producto eliminado correctamente.')
-            fetchData()
+            initData()
         } catch (error: any) {
             alert('Error al eliminar: ' + error.message)
         } finally {
@@ -189,7 +222,7 @@ export default function InventoryPage() {
             setRestockQty('')
             setSelectedRestockItem(null)
             setRestockSearch('')
-            fetchData()
+            initData()
         } catch (error: any) {
             alert('Error al registrar entrada: ' + error.message)
         } finally {
@@ -307,7 +340,7 @@ export default function InventoryPage() {
                         <DialogContent>
                             <ProductForm
                                 onClose={handleCloseForm}
-                                onSuccess={fetchData}
+                                onSuccess={initData}
                                 initialData={editingVariant}
                             />
                         </DialogContent>
@@ -315,36 +348,31 @@ export default function InventoryPage() {
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card>
+            <div className="grid gap-4 md:grid-cols-2">
+                <Card
+                    className={`cursor-pointer transition-all hover:bg-slate-50 ${showLowStockOnly ? 'border-red-500 shadow-sm' : ''}`}
+                    onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+                >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">SKUs Totales</CardTitle>
-                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Alertas de Stock Bajo</CardTitle>
+                        <AlertTriangle className={`h-4 w-4 ${showLowStockOnly ? 'text-red-600' : 'text-red-500'}`} />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalVariants}</div>
-                        <p className="text-xs text-muted-foreground">
-                            {stats.suppliesCount} son insumos operativos
+                        <div className="text-2xl font-bold text-red-500">{stats.lowStock}</div>
+                        <p className="text-xs text-muted-foreground mt-1 text-red-600/80 font-medium">
+                            {showLowStockOnly ? 'Mostrando filtros. Clic para limpiar.' : 'Clic para filtrar el catálogo.'}
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Alertas de Stock Bajo</CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                        <CardTitle className="text-sm font-medium">Valor Estimado (Costo)</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-red-500">{stats.lowStock}</div>
-                        <p className="text-xs text-muted-foreground">Variantes debajo del nivel de reorden</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Valor Estimado</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">---</div>
-                        <p className="text-xs text-muted-foreground">Calculado sobre costo de compra</p>
+                        <div className="text-2xl font-bold">${stats.estimatedValue.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Calculado sobre inventario disponible para venta. Excluye insumos.
+                        </p>
                     </CardContent>
                 </Card>
             </div>
@@ -364,7 +392,7 @@ export default function InventoryPage() {
                     </div>
                 </div>
 
-                <div className="grid gap-2 w-full md:w-48">
+                <div className="grid gap-2 w-full md:w-32">
                     <Label>Categoría</Label>
                     <Select value={filterCategory} onValueChange={setFilterCategory}>
                         <SelectTrigger className="bg-background">
@@ -372,8 +400,23 @@ export default function InventoryPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas</SelectItem>
-                            {categories.map(cat => (
-                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            {catalogs.product_category.map(cat => (
+                                <SelectItem key={cat.internal_code} value={cat.internal_code}>{cat.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="grid gap-2 w-full md:w-32">
+                    <Label>Set/Expansión</Label>
+                    <Select value={filterSet} onValueChange={setFilterSet}>
+                        <SelectTrigger className="bg-background">
+                            <SelectValue placeholder="Todos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos</SelectItem>
+                            {catalogs.tcg_set.map(cat => (
+                                <SelectItem key={cat.internal_code} value={cat.internal_code}>{cat.name}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -387,13 +430,14 @@ export default function InventoryPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todos</SelectItem>
-                            <SelectItem value="resale">Producto</SelectItem>
-                            <SelectItem value="supply">Insumo</SelectItem>
+                            {catalogs.product_type.map(cat => (
+                                <SelectItem key={cat.internal_code} value={cat.internal_code}>{cat.name}</SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
 
-                <div className="grid gap-2 w-full md:w-40">
+                <div className="grid gap-2 w-full md:w-32">
                     <Label>Agrupar por</Label>
                     <Select value={groupBy} onValueChange={setGroupBy}>
                         <SelectTrigger className="bg-background">
@@ -401,8 +445,9 @@ export default function InventoryPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="none">Sin agrupar</SelectItem>
-                            <SelectItem value="category">Categoría</SelectItem>
-                            <SelectItem value="type">Tipo</SelectItem>
+                            <SelectItem value="category_name">Categoría</SelectItem>
+                            <SelectItem value="type_name">Tipo</SelectItem>
+                            <SelectItem value="set_name">Set / Expansión</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -447,17 +492,16 @@ export default function InventoryPage() {
                                 {loading ? (
                                     <tr><td colSpan={6} className="p-4 text-center">Cargando...</td></tr>
                                 ) : groupBy === 'none' ? (
-                                    // FLAT LIST
                                     filteredVariants.map((v) => (
                                         <InventoryRow key={v.id} variant={v} onEdit={handleEdit} onDelete={handleDelete} />
                                     ))
                                 ) : (
                                     // GROUPED LIST
                                     Object.entries(groupedVariants).map(([groupName, groupItems]: [string, any]) => (
-                                        <>
-                                            <tr key={'group-' + groupName} className="bg-muted/80">
+                                        <React.Fragment key={'group-' + groupName}>
+                                            <tr className="bg-muted/80">
                                                 <td colSpan={6} className="p-2 px-4 font-bold text-sm text-foreground">
-                                                    {groupBy === 'category' ? '📂' : '🏷️'} {groupName === 'resale' ? 'Productos' : groupName === 'supply' ? 'Insumos' : groupName}
+                                                    {groupBy === 'category_name' ? '📂' : groupBy === 'set_name' ? '📦' : '🏷️'} {groupName}
                                                     <Badge variant="outline" className="ml-2 bg-background text-xs font-normal">
                                                         {groupItems.length} items
                                                     </Badge>
@@ -466,7 +510,7 @@ export default function InventoryPage() {
                                             {groupItems.map((v: any) => (
                                                 <InventoryRow key={v.id} variant={v} onEdit={handleEdit} onDelete={handleDelete} />
                                             ))}
-                                        </>
+                                        </React.Fragment>
                                     ))
                                 )}
                                 {!loading && filteredVariants.length === 0 && (
@@ -492,8 +536,11 @@ function InventoryRow({ variant, onEdit, onDelete }: { variant: any, onEdit: (v:
             <td className="p-3 font-mono text-xs text-muted-foreground">{variant.sku}</td>
             <td className="p-3 font-medium">
                 {variant.title}
-                <div className="text-xs text-muted-foreground font-normal">
-                    {variant.category}
+                <div className="flex gap-2 text-xs text-muted-foreground font-normal mt-0.5">
+                    <span>{variant.category_name}</span>
+                    {variant.set_name && variant.set_name !== '-' && (
+                        <span>• {variant.set_name}</span>
+                    )}
                 </div>
             </td>
             <td className="p-3">

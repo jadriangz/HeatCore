@@ -7,7 +7,7 @@ export const ORIGIN_CONFIG = {
     number: "996",
     district: "La campiña",
     city: "Culiacán",
-    state: "Sinaloa",
+    state: "SI",
     postalCode: "80060",
     country: "MX"
 };

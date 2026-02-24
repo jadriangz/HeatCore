@@ -20,8 +20,30 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
         cost_price: '', // Added cost_price to state
         price: '',
         category: '',
-        min_stock: '5'
+        min_stock: '5',
+        image_url: '',
+        set_name: ''
     })
+
+    const [catalogs, setCatalogs] = useState<{ product_type: any[], product_category: any[], tcg_set: any[] }>({
+        product_type: [],
+        product_category: [],
+        tcg_set: []
+    })
+
+    useEffect(() => {
+        async function fetchCatalogs() {
+            const { data } = await supabase.from('system_catalogs').select('*').eq('is_active', true)
+            if (data) {
+                setCatalogs({
+                    product_type: data.filter(d => d.catalog_group === 'product_type').sort((a, b) => a.name.localeCompare(b.name)),
+                    product_category: data.filter(d => d.catalog_group === 'product_category').sort((a, b) => a.name.localeCompare(b.name)),
+                    tcg_set: data.filter(d => d.catalog_group === 'tcg_set').sort((a, b) => a.name.localeCompare(b.name)),
+                })
+            }
+        }
+        fetchCatalogs()
+    }, [])
 
     useEffect(() => {
         if (initialData) {
@@ -33,7 +55,9 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                 // specific variant price, or falls back
                 price: initialData.price?.toString() || '',
                 category: initialData.products?.category || '',
-                min_stock: (initialData.products?.min_stock_level || 5).toString()
+                min_stock: (initialData.products?.min_stock_level || 5).toString(),
+                image_url: initialData.products?.image_url || '',
+                set_name: initialData.set_name || ''
             })
         }
     }, [initialData])
@@ -56,7 +80,9 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                         // base_sku: formData.sku, // Keep base SKU stable or update? Let's update for now
                         type: formData.type as any,
                         category: formData.category,
-                        min_stock_level: parseInt(formData.min_stock)
+                        min_stock_level: parseInt(formData.min_stock),
+                        image_url: formData.image_url || null,
+                        set_name: formData.set_name || null
                     })
                     .eq('id', productId)
 
@@ -68,7 +94,7 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                     .update({
                         sku: formData.sku,
                         price: parseFloat(formData.price) || 0,
-                        cost_price: parseFloat(formData.cost_price) || null // Update cost_price
+                        cost_price: parseFloat(formData.cost_price) || null
                     })
                     .eq('id', variantId)
 
@@ -85,7 +111,9 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                         base_sku: formData.sku,
                         type: formData.type as any,
                         category: formData.category,
-                        min_stock_level: parseInt(formData.min_stock)
+                        min_stock_level: parseInt(formData.min_stock),
+                        image_url: formData.image_url || null,
+                        set_name: formData.set_name || null
                     })
                     .select()
                     .single()
@@ -133,29 +161,95 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                                 value={formData.type}
                                 onChange={e => setFormData({ ...formData, type: e.target.value })}
                             >
-                                <option value="resale">Producto (Venta)</option>
-                                <option value="supply">Insumo Operativo</option>
-                                <option value="asset">Activo / Equipo</option>
+                                <option value="">Selecciona un tipo...</option>
+                                {catalogs.product_type.map(cat => (
+                                    <option key={cat.internal_code} value={cat.internal_code}>{cat.name}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Categoría</label>
-                            <Input
-                                placeholder="ej. Booster Box, ETB, Micas"
+                            <select
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 value={formData.category}
                                 onChange={e => setFormData({ ...formData, category: e.target.value })}
+                            >
+                                <option value="">Selecciona una categoría...</option>
+                                {catalogs.product_category.map(cat => (
+                                    <option key={cat.internal_code} value={cat.internal_code}>{cat.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Set / Expansión (Solo TCG)</label>
+                            <select
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-blue-600"
+                                value={formData.set_name}
+                                onChange={e => setFormData({ ...formData, set_name: e.target.value })}
+                            >
+                                <option value="">Ninguno / No Aplica</option>
+                                {catalogs.tcg_set.map(cat => (
+                                    <option key={cat.internal_code} value={cat.internal_code}>{cat.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Título</label>
+                            <Input
+                                required
+                                placeholder="ej. Pokémon 151 Elite Trainer Box"
+                                value={formData.title}
+                                onChange={e => setFormData({ ...formData, title: e.target.value })}
                             />
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Título</label>
-                        <Input
-                            required
-                            placeholder="ej. Pokémon 151 Elite Trainer Box"
-                            value={formData.title}
-                            onChange={e => setFormData({ ...formData, title: e.target.value })}
-                        />
+                    <div className="space-y-4">
+                        <label className="text-sm font-medium">URL de Imagen (Opcional)</label>
+                        <div className="flex gap-2 items-center">
+                            <Input
+                                placeholder="https://..."
+                                value={formData.image_url}
+                                onChange={e => setFormData({ ...formData, image_url: e.target.value })}
+                            />
+                            <div className="relative">
+                                <Input
+                                    type="file"
+                                    accept="image/*"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    onChange={async (e) => {
+                                        if (!e.target.files || e.target.files.length === 0) return;
+                                        const file = e.target.files[0];
+                                        const fileExt = file.name.split('.').pop();
+                                        const fileName = `product_${Date.now()}.${fileExt}`;
+
+                                        // Upload to Supabase Storage
+                                        const { error: uploadError } = await supabase.storage
+                                            .from('products')
+                                            .upload(fileName, file);
+
+                                        if (uploadError) {
+                                            alert('Error al subir imagen. Verifica que el bucket "products" exista y sea público.');
+                                            console.error(uploadError);
+                                            return;
+                                        }
+
+                                        const { data } = supabase.storage.from('products').getPublicUrl(fileName);
+                                        setFormData({ ...formData, image_url: data.publicUrl });
+                                        alert('Imagen adjuntada exitosamente.');
+                                    }}
+                                />
+                                <Button type="button" variant="secondary">Adjuntar</Button>
+                            </div>
+                        </div>
+                        {formData.image_url && (
+                            <div className="h-24 w-24 rounded border overflow-hidden">
+                                <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">

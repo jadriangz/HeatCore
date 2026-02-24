@@ -17,6 +17,16 @@ export default {
         },
         extend: {
             colors: {
+                brand: {
+                    red: '#FF1A1A',
+                    redHover: '#CC1414',
+                    black: '#111111',
+                },
+                semantic: {
+                    success: '#10B981',
+                    warning: '#F59E0B',
+                    error: '#EF4444',
+                },
                 border: "hsl(var(--border))",
                 input: "hsl(var(--input))",
                 ring: "hsl(var(--ring))",

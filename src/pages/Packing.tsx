@@ -25,7 +25,7 @@ export default function Packing() {
     const fetchOrders = async () => {
         const { data } = await supabase
             .from('orders')
-            .select('*, order_items(*), customers(name)')
+            .select('*, order_items(*, product_variants(weight_grams, barcode)), customers(name)')
             .eq('status', 'paid')
             .eq('fulfillment_status', 'unfulfilled')
             .order('created_at', { ascending: true })
@@ -44,7 +44,7 @@ export default function Packing() {
         e.preventDefault()
         if (!selectedOrder) return
 
-        const item = selectedOrder.order_items.find((i: any) => i.sku === scanInput || i.barcode === scanInput)
+        const item = selectedOrder.order_items.find((i: any) => i.sku === scanInput || i.product_variants?.barcode === scanInput || i.barcode === scanInput)
 
         if (item) {
             const currentCount = scannedItems[item.sku] || 0
@@ -88,6 +88,27 @@ export default function Packing() {
         const toastId = toast.loading('Connecting to Envia.com...')
 
         try {
+            // Calculate total weight of products
+            // We know order.order_items has product_variants.weight_grams now
+            let totalWeightGrams = 0
+            selectedOrder.order_items.forEach((item: any) => {
+                const unitWeight = item.product_variants?.weight_grams || 100 // fallback
+                totalWeightGrams += unitWeight * item.quantity
+            })
+
+            // Find the dimensions of the primary box selected (if any has physical dimensions)
+            // For simplicity, we assume the first supply (which is likely the box) dictates dimensions
+            const primaryBox = selectedSupplies[0]
+            const finalLength = primaryBox.length_cm || 20
+            const finalWidth = primaryBox.width_cm || 20
+            const finalHeight = primaryBox.height_cm || 10
+
+            // Add supply weight to the total weight (e.g., box itself weighs 150g)
+            let suppliesWeightGrams = 0
+            selectedSupplies.forEach(s => {
+                suppliesWeightGrams += (s.weight_grams || 50) * s.quantity
+            })
+
             const payload = {
                 order_id: selectedOrder.id,
                 supplies: selectedSupplies.map(s => ({
@@ -96,8 +117,8 @@ export default function Packing() {
                     unit_cost: s.price
                 })),
                 carrier_service: 'Standard',
-                final_weight: 1000,
-                final_dimensions: { length: 20, width: 20, height: 20 }
+                final_weight: totalWeightGrams + suppliesWeightGrams,
+                final_dimensions: { length: finalLength, width: finalWidth, height: finalHeight }
             }
 
             const { error } = await supabase.functions.invoke('create-shipment', {
@@ -229,6 +250,11 @@ export default function Packing() {
                                                 >
                                                     <span className="font-bold text-sm w-full truncate" title={supply.sku}>{supply.sku}</span>
                                                     <span className="text-xs text-muted-foreground w-full truncate">{supply.title?.split('-')[1] || supply.sku}</span>
+                                                    {supply.length_cm && (
+                                                        <span className="text-[10px] text-muted-foreground mt-1">
+                                                            {supply.length_cm}x{supply.width_cm}x{supply.height_cm}cm
+                                                        </span>
+                                                    )}
                                                 </Button>
                                             ))}
                                         </div>

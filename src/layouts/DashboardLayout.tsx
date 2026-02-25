@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Package, ShoppingCart, BarChart3, Settings, LogOut, ClipboardList, Users, ShoppingBag, ClipboardCheck } from 'lucide-react'
+import { Package, ShoppingCart, BarChart3, Settings, LogOut, ClipboardList, Users, ShoppingBag, ClipboardCheck, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Toaster } from '@/components/ui/sonner'
+import { useAuth } from '@/contexts/AuthContext'
 
 
 
 export default function DashboardLayout() {
     const location = useLocation()
+    const { signOut } = useAuth()
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
     const navGroups = [
@@ -30,7 +32,8 @@ export default function DashboardLayout() {
         {
             title: "Logística e Inventario",
             items: [
-                { href: '/packing', label: 'Logística', icon: Package },
+                { href: '/packing', label: 'Empaquetado', icon: Package },
+                { href: '/shipments', label: 'Envíos', icon: Truck },
                 { href: '/inventory', label: 'Inventario y Auditoría', icon: BarChart3 },
             ]
         },
@@ -65,15 +68,15 @@ export default function DashboardLayout() {
                     </div>
                 </div>
 
-                <nav className="flex-1 overflow-y-auto p-4 space-y-6">
+                <nav className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
                     {navGroups.map((group, idx) => (
                         <div key={idx}>
                             {isSidebarOpen && (
-                                <h3 className="mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                <h3 className="mb-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-widest pl-1">
                                     {group.title}
                                 </h3>
                             )}
-                            <div className="space-y-1">
+                            <div className="space-y-0.5">
                                 {group.items.map((item) => {
                                     const Icon = item.icon
                                     const isActive = location.pathname === item.href
@@ -82,7 +85,7 @@ export default function DashboardLayout() {
                                             key={item.href}
                                             to={item.href}
                                             className={cn(
-                                                "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
+                                                "flex items-center gap-3 px-3 py-1.5 rounded-md transition-colors",
                                                 isActive
                                                     ? "bg-brand-red text-white shadow-md relative"
                                                     : "text-gray-400 hover:bg-white/5 hover:text-white",
@@ -92,7 +95,7 @@ export default function DashboardLayout() {
                                             {isActive && isSidebarOpen && (
                                                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-md" />
                                             )}
-                                            <Icon className={cn("h-5 w-5", isActive ? "text-white" : "text-gray-400")} />
+                                            <Icon className={cn("h-[18px] w-[18px]", isActive ? "text-white" : "text-gray-400")} />
                                             {isSidebarOpen && <span className="font-medium text-sm">{item.label}</span>}
                                         </Link>
                                     )
@@ -103,7 +106,17 @@ export default function DashboardLayout() {
                 </nav>
 
                 <div className="p-4 border-t border-[#222222]">
-                    <Button variant="ghost" className={cn("w-full justify-start text-gray-400 hover:text-white hover:bg-white/10", !isSidebarOpen && "justify-center px-0")}>
+                    <Button
+                        variant="ghost"
+                        onClick={async () => {
+                            try {
+                                await signOut();
+                            } catch (e) {
+                                console.error('Error signing out', e);
+                            }
+                        }}
+                        className={cn("w-full justify-start text-gray-400 hover:text-white hover:bg-white/10", !isSidebarOpen && "justify-center px-0")}
+                    >
                         <LogOut className="h-5 w-5 mr-2" />
                         {isSidebarOpen && "Cerrar Sesión"}
                     </Button>

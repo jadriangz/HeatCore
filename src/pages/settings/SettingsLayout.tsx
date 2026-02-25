@@ -7,6 +7,7 @@ export default function SettingsLayout() {
 
     const navItems = [
         { href: '/settings', label: 'General' },
+        { href: '/settings/users', label: 'Cuentas y Accesos' },
         { href: '/settings/inventory', label: 'Inventario y Catálogos' },
         { href: '/settings/shipping', label: 'Envíos' },
     ]

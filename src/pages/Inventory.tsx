@@ -337,7 +337,7 @@ export default function InventoryPage() {
                                 Nuevo Producto
                             </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
                             <ProductForm
                                 onClose={handleCloseForm}
                                 onSuccess={initData}

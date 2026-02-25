@@ -37,22 +37,27 @@ HeatCore is a modern, modular ERP built specifically for TCG (Trading Card Game)
 *   **Smart Receiving**: Validate received goods against POs.
 *   **Financial Integrity**: Calculates dynamically the **Weighted Average Cost (Costo Promedio Ponderado)** upon receiving new inventory, updating the asset value accurately. 
 
+### 6. Advanced Logistics & Tracking
+*   **Dimensional Weight Support**: Product dimensions and weights are accurately captured and calculated to provide exact volumetric weight for shipping carriers via edge functions.
+*   **Shipments Dashboard**: Centralized view for all generated shipping labels and tracking numbers.
+
+### 7. Security & Authentication
+*   **Google OAuth & Email**: Managed strictly via Supabase Auth.
+*   **PostgreSQL Hooks**: Custom `Before User Created` hook implements a Waitlist system. Only users pre-approved into the `authorized_users` table can successfully register.
+*   **Row Level Security (RLS)**: Enforced policies to prevent anonymous queries and strictly scope data modifications to `authenticated` users.
+
 ---
 
 ## Next Steps / Upcoming Phases
 
-### 1. Advanced Logistics Tracking
-*   Enrich the `product_variants` schema with strict Dimensions (L,W,H) and Weight calculations.
-*   Modify the `/packing` dashboard to consume these metrics and query Envia.com using accurate volumetric weights.
-
-### 2. Security & Authentication
-*   Implement Supabase Auth (Google OAuth or Email).
-*   Protect all routes and create a dedicated `/login` access point.
-*   Configure aggressive RLS (Row Level Security) policies on Supabase strictly limiting access to authenticated operators.
-
-### 3. Marketing & Social Analytics
+### 1. Marketing & Social Analytics
 *   Create automated Edge Functions to fetch daily KPI snapshots from TikTok/Youtube APIs.
 *   Build a visual dashboard (`/social`) to centralize audience metrics against sales trends.
+
+### 3. External API Integrations (Backlog)
+*   **Envia.com**: Transition the `create-shipment` edge function from mock mode to live API calls for real-time label generation and carrier sync.
+*   **Shopify**: Reconfigure bidirectional inventory and product sync, and set up webhooks for unfulfilled order ingestion.
+*   **TikTok Shop**: Integrate TikTok Shop API for automated order ingestion and specialized TCG-set stock synchronization.
 
 ---
 

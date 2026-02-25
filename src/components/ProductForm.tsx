@@ -16,13 +16,18 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
     const [formData, setFormData] = useState({
         title: '',
         sku: '',
+        barcode: '',
         type: 'resale',
         cost_price: '', // Added cost_price to state
         price: '',
         category: '',
         min_stock: '5',
         image_url: '',
-        set_name: ''
+        set_name: '',
+        weight_grams: '100',
+        length_cm: '15',
+        width_cm: '10',
+        height_cm: '5'
     })
 
     const [catalogs, setCatalogs] = useState<{ product_type: any[], product_category: any[], tcg_set: any[] }>({
@@ -50,6 +55,7 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
             setFormData({
                 title: initialData.products?.title || initialData.title || '',
                 sku: initialData.sku || '',
+                barcode: initialData.barcode || '',
                 type: initialData.products?.type || 'resale',
                 cost_price: initialData.cost_price?.toString() || '', // Set cost_price from initialData
                 // specific variant price, or falls back
@@ -57,7 +63,11 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                 category: initialData.products?.category || '',
                 min_stock: (initialData.products?.min_stock_level || 5).toString(),
                 image_url: initialData.products?.image_url || '',
-                set_name: initialData.set_name || ''
+                set_name: initialData.set_name || '',
+                weight_grams: initialData.weight_grams?.toString() || '100',
+                length_cm: initialData.length_cm?.toString() || '15',
+                width_cm: initialData.width_cm?.toString() || '10',
+                height_cm: initialData.height_cm?.toString() || '5'
             })
         }
     }, [initialData])
@@ -93,8 +103,13 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                     .from('product_variants')
                     .update({
                         sku: formData.sku,
+                        barcode: formData.barcode,
                         price: parseFloat(formData.price) || 0,
-                        cost_price: parseFloat(formData.cost_price) || null
+                        cost_price: parseFloat(formData.cost_price) || null,
+                        weight_grams: parseFloat(formData.weight_grams) || 100,
+                        length_cm: parseFloat(formData.length_cm) || 15,
+                        width_cm: parseFloat(formData.width_cm) || 10,
+                        height_cm: parseFloat(formData.height_cm) || 5
                     })
                     .eq('id', variantId)
 
@@ -126,9 +141,13 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                     .insert({
                         product_id: product.id,
                         sku: formData.sku,
+                        barcode: formData.barcode,
                         price: parseFloat(formData.price) || 0,
                         cost_price: parseFloat(formData.cost_price) || null, // Insert cost_price
-                        weight_grams: 100,
+                        weight_grams: parseFloat(formData.weight_grams) || 100,
+                        length_cm: parseFloat(formData.length_cm) || 15,
+                        width_cm: parseFloat(formData.width_cm) || 10,
+                        height_cm: parseFloat(formData.height_cm) || 5,
                         variant_condition: 'Sealed' // Default for sealed products
                     })
 
@@ -252,7 +271,7 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                         )}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-sm font-medium">SKU</label>
                             <Input
@@ -260,6 +279,14 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                                 placeholder="Código Único"
                                 value={formData.sku}
                                 onChange={e => setFormData({ ...formData, sku: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Código de Barras (Opcional)</label>
+                            <Input
+                                placeholder="EAN/UPC"
+                                value={formData.barcode}
+                                onChange={e => setFormData({ ...formData, barcode: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
@@ -282,6 +309,45 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                                 placeholder="0.00"
                                 value={formData.cost_price}
                                 onChange={e => setFormData({ ...formData, cost_price: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Peso (g)</label>
+                            <Input
+                                type="number" step="1"
+                                placeholder="100"
+                                value={formData.weight_grams}
+                                onChange={e => setFormData({ ...formData, weight_grams: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Largo (cm)</label>
+                            <Input
+                                type="number" step="0.1"
+                                placeholder="15"
+                                value={formData.length_cm}
+                                onChange={e => setFormData({ ...formData, length_cm: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Ancho (cm)</label>
+                            <Input
+                                type="number" step="0.1"
+                                placeholder="10"
+                                value={formData.width_cm}
+                                onChange={e => setFormData({ ...formData, width_cm: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Alto (cm)</label>
+                            <Input
+                                type="number" step="0.1"
+                                placeholder="5"
+                                value={formData.height_cm}
+                                onChange={e => setFormData({ ...formData, height_cm: e.target.value })}
                             />
                         </div>
                     </div>

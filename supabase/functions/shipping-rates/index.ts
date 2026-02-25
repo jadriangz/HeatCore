@@ -52,15 +52,16 @@ serve(async (req) => {
                 currency: "MXN"
             },
             packages: items.map((item: any) => ({
-                content: item.name || "TCG Product",
-                amount: 1,
+                content: item.name || "TCG Collectibles",
+                amount: item.quantity || 1,
                 type: "box",
                 dimensions: {
-                    length: item.length || 15,
-                    width: item.width || 15,
-                    height: item.height || 5
+                    length: item.length || item.dimensions?.length || 15,
+                    width: item.width || item.dimensions?.width || 15,
+                    height: item.height || item.dimensions?.height || 5
                 },
-                weight: item.weight || 1,
+                // Envia expects weight per package/item
+                weight: item.weight ? item.weight / 1000 : 1, // Convert grams to KG if incoming is grams, fallback 1kg
                 insurance: 0,
                 declaredValue: 0,
                 weightUnit: "KG",
@@ -76,31 +77,6 @@ serve(async (req) => {
                 comments: ""
             }
         }
-
-        // Simplify package logic: 1 package containing total weight
-        // Envia charges by dimensional weight anyway.
-        const totalWeight = items.reduce((sum: number, item: any) => sum + (item.weight || 0.1) * item.quantity, 0)
-        // Basic heuristics:
-        // < 1kg -> Small Box
-        // > 1kg -> Medium Box
-        const finalPackage = {
-            content: "TCG Collectibles",
-            amount: 1,
-            type: "box",
-            dimensions: {
-                length: 15,
-                width: 15,
-                height: 5 // Default small box
-            },
-            weight: totalWeight < 0.1 ? 0.1 : totalWeight,
-            insurance: 0,
-            declaredValue: 0,
-            weightUnit: "KG",
-            lengthUnit: "CM"
-        }
-
-        // Override payload packages to single consolidated package
-        payload.packages = [finalPackage]
 
         console.log("Calling Envia API with:", JSON.stringify(payload))
 

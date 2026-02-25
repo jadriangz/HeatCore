@@ -29,7 +29,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (mounted) {
                 setSession(session)
                 setUser(session?.user ?? null)
-                setLoading(false)
+                // If there is an auth redirect hash in the URL, wait for onAuthStateChange
+                const hasAuthHash = window.location.hash.includes('access_token') || window.location.hash.includes('error_description')
+                if (!hasAuthHash) {
+                    setLoading(false)
+                }
             }
         })
 

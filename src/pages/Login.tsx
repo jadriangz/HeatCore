@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -7,13 +7,35 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Flame, Loader2 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Login() {
     const navigate = useNavigate()
+    const { user } = useAuth()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const [googleLoading, setGoogleLoading] = useState(false)
+
+    // Redirect if already logged in
+    useEffect(() => {
+        if (user) {
+            navigate('/', { replace: true })
+        }
+    }, [user, navigate])
+
+    // Check for hash errors from unapproved waitlist
+    useEffect(() => {
+        const hash = window.location.hash
+        if (hash && hash.includes('error_description')) {
+            const params = new URLSearchParams(hash.substring(1))
+            const errorDesc = params.get('error_description')
+            if (errorDesc) {
+                toast.error(decodeURIComponent(errorDesc).replace(/\+/g, ' '))
+                window.location.hash = '' // Clear hash
+            }
+        }
+    }, [])
 
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault()

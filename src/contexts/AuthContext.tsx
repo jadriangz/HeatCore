@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
+import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 
 interface AuthContextType {
@@ -25,15 +26,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Initial session fetch
         let mounted = true
 
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        // Capture any URL hash errors immediately before Supabase clears them, just in case
+        const hash = window.location.hash
+        if (hash && hash.includes('error_description')) {
+            const params = new URLSearchParams(hash.substring(1))
+            const errorDesc = params.get('error_description')
+            if (errorDesc) {
+                toast.error(decodeURIComponent(errorDesc).replace(/\+/g, ' '))
+                window.location.hash = '' // Clear so it doesn't stay
+            }
+        }
+
+        supabase.auth.getSession().then(({ data: { session }, error }) => {
             if (mounted) {
+                if (error) {
+                    console.error('Session get error:', error)
+                    toast.error(error.message)
+                }
                 setSession(session)
                 setUser(session?.user ?? null)
-                // If there is an auth redirect hash in the URL, wait for onAuthStateChange
-                const hasAuthHash = window.location.hash.includes('access_token') || window.location.hash.includes('error_description')
-                if (!hasAuthHash) {
-                    setLoading(false)
-                }
+                setLoading(false)
             }
         })
 
@@ -42,7 +54,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (mounted) {
                 setSession(session)
                 setUser(session?.user ?? null)
-                setLoading(false)
+                // We do NOT set loading to false here for the initial load, 
+                // because getSession is the authoritative source that properly waits for OAuth hash parsing.
             }
         })
 

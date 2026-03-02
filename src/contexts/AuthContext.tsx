@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Capture any URL hash errors immediately before Supabase clears them, just in case
         const hash = window.location.hash
+
         if (hash && hash.includes('error_description')) {
             const params = new URLSearchParams(hash.substring(1))
             const errorDesc = params.get('error_description')

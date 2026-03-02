@@ -16,6 +16,7 @@ import SettingsLayout from '@/pages/settings/SettingsLayout'
 import InventorySettings from '@/pages/settings/InventorySettings'
 import UserSettings from '@/pages/settings/UserSettings'
 import Shipments from '@/pages/Shipments'
+import SocialDashboard from '@/pages/marketing/Social'
 
 function App() {
     return (
@@ -33,6 +34,7 @@ function App() {
                             <Route path="purchasing" element={<Purchasing />} />
                             <Route path="receiving" element={<Receiving />} />
                             <Route path="shipments" element={<Shipments />} />
+                            <Route path="social" element={<SocialDashboard />} />
                             <Route path="inventory" element={<InventoryPage />} />
                             <Route path="inventory/audit" element={<AuditScreen />} />
                             <Route path="inventory/log" element={<InventoryLog />} />

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Package, ShoppingCart, BarChart3, Settings, LogOut, ClipboardList, Users, ShoppingBag, ClipboardCheck, Truck } from 'lucide-react'
+import { Package, ShoppingCart, BarChart3, Settings, LogOut, ClipboardList, Users, ShoppingBag, ClipboardCheck, Truck, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Toaster } from '@/components/ui/sonner'
@@ -35,6 +35,12 @@ export default function DashboardLayout() {
                 { href: '/packing', label: 'Empaquetado', icon: Package },
                 { href: '/shipments', label: 'Envíos', icon: Truck },
                 { href: '/inventory', label: 'Inventario y Auditoría', icon: BarChart3 },
+            ]
+        },
+        {
+            title: "Marketing",
+            items: [
+                { href: '/social', label: 'Redes Sociales', icon: TrendingUp },
             ]
         },
         {

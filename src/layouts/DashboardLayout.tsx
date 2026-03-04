@@ -15,23 +15,13 @@ export default function DashboardLayout() {
 
     const navGroups = [
         {
-            title: "Ventas",
+            title: "Operaciones",
             items: [
                 { href: '/', label: 'Punto de Venta', icon: ShoppingCart },
                 { href: '/sales', label: 'Ventas', icon: ClipboardList },
                 { href: '/customers', label: 'Clientes', icon: Users },
-            ]
-        },
-        {
-            title: "Compras",
-            items: [
                 { href: '/purchasing', label: 'Proveedores y POs', icon: ShoppingBag },
                 { href: '/receiving', label: 'Recepciones', icon: ClipboardCheck },
-            ]
-        },
-        {
-            title: "Logística e Inventario",
-            items: [
                 { href: '/packing', label: 'Empaquetado', icon: Package },
                 { href: '/shipments', label: 'Envíos', icon: Truck },
                 { href: '/inventory', label: 'Inventario y Auditoría', icon: BarChart3 },

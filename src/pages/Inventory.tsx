@@ -130,8 +130,8 @@ export default function InventoryPage() {
                     category: v.products?.category || '-',
                     type_name: getName(v.products?.type, 'product_type') || 'Producto',
                     category_name: getName(v.products?.category, 'product_category') || '-',
-                    set_name: getName(v.products?.set_name, 'tcg_set') || '-',
-                    raw_set_name: v.products?.set_name,
+                    set_name: getName(v.set_name, 'tcg_set') || '-',
+                    raw_set_name: v.set_name,
                     min_stock_level: minStock,
                     stock
                 }

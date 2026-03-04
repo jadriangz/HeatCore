@@ -63,7 +63,7 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                 category: initialData.products?.category || '',
                 min_stock: (initialData.products?.min_stock_level || 5).toString(),
                 image_url: initialData.products?.image_url || '',
-                set_name: initialData.set_name || '',
+                set_name: initialData.raw_set_name || initialData.set_name || '',
                 weight_grams: initialData.weight_grams?.toString() || '100',
                 length_cm: initialData.length_cm?.toString() || '15',
                 width_cm: initialData.width_cm?.toString() || '10',
@@ -91,8 +91,7 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                         type: formData.type as any,
                         category: formData.category,
                         min_stock_level: parseInt(formData.min_stock),
-                        image_url: formData.image_url || null,
-                        set_name: formData.set_name || null
+                        image_url: formData.image_url || null
                     })
                     .eq('id', productId)
 
@@ -109,7 +108,8 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                         weight_grams: parseFloat(formData.weight_grams) || 100,
                         length_cm: parseFloat(formData.length_cm) || 15,
                         width_cm: parseFloat(formData.width_cm) || 10,
-                        height_cm: parseFloat(formData.height_cm) || 5
+                        height_cm: parseFloat(formData.height_cm) || 5,
+                        set_name: formData.set_name || null
                     })
                     .eq('id', variantId)
 
@@ -127,8 +127,7 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                         type: formData.type as any,
                         category: formData.category,
                         min_stock_level: parseInt(formData.min_stock),
-                        image_url: formData.image_url || null,
-                        set_name: formData.set_name || null
+                        image_url: formData.image_url || null
                     })
                     .select()
                     .single()
@@ -148,6 +147,7 @@ export function ProductForm({ onClose, onSuccess, initialData }: ProductFormProp
                         length_cm: parseFloat(formData.length_cm) || 15,
                         width_cm: parseFloat(formData.width_cm) || 10,
                         height_cm: parseFloat(formData.height_cm) || 5,
+                        set_name: formData.set_name || null,
                         variant_condition: 'Sealed' // Default for sealed products
                     })
 

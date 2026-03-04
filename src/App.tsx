@@ -17,6 +17,7 @@ import InventorySettings from '@/pages/settings/InventorySettings'
 import UserSettings from '@/pages/settings/UserSettings'
 import Shipments from '@/pages/Shipments'
 import SocialDashboard from '@/pages/marketing/Social'
+import Expenses from '@/pages/finance/Expenses'
 
 function App() {
     return (
@@ -35,6 +36,7 @@ function App() {
                             <Route path="receiving" element={<Receiving />} />
                             <Route path="shipments" element={<Shipments />} />
                             <Route path="social" element={<SocialDashboard />} />
+                            <Route path="expenses" element={<Expenses />} />
                             <Route path="inventory" element={<InventoryPage />} />
                             <Route path="inventory/audit" element={<AuditScreen />} />
                             <Route path="inventory/log" element={<InventoryLog />} />
